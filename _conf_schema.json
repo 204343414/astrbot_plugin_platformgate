@@ -1,0 +1,37 @@
+{
+  "enabled": {
+    "description": "启用平台能力门禁。关闭后所有拦截逻辑不生效（不影响枚举/WebUI 展示）。",
+    "type": "bool",
+    "default": true
+  },
+  "default_allow_all": {
+    "description": "默认策略。true=默认放行所有插件（黑名单模式）；false=默认拦截所有插件（白名单模式），需在 WebUI 里手动勾选允许的插件。",
+    "type": "bool",
+    "default": false
+  },
+  "block_hint": {
+    "description": "指令/工具被拦截时是否向用户发送一句提示。开启会让机器人主动发言（易封号平台建议关闭，改为静默拦截）。",
+    "type": "bool",
+    "default": false
+  },
+  "block_hint_text": {
+    "description": "被拦截时发送的提示文案。{plugin} 会被替换为插件名，{command} 替换为指令名。",
+    "type": "string",
+    "default": "该功能 ({plugin}) 在此平台不可用。"
+  },
+  "enumerate_interval_seconds": {
+    "description": "枚举插件/指令/工具注册表后缓存的有效期（秒）。插件热更新后需要等待刷新。0=每次都实时枚举。",
+    "type": "int",
+    "default": 15
+  },
+  "protect_own_plugin": {
+    "description": "始终放行本插件自身（否则自己把自己拦了没法管理）。",
+    "type": "bool",
+    "default": true
+  },
+  "debug_log": {
+    "description": "开启后打印每条被拦截/放行指令与工具的决策日志，方便排查。",
+    "type": "bool",
+    "default": false
+  }
+}

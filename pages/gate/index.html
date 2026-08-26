@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>平台能力门禁</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>🛡️ 平台能力门禁</h1>
+      <p>按平台(napcat/onebot11 与 QQ 官方)白名单控制哪些插件的指令和 LLM 工具可用。</p>
+    </header>
+
+    <div id="notice" class="notice hidden"></div>
+
+    <section class="summary">
+      <div class="stat"><b id="stat-plugins">–</b><span>已注册插件</span></div>
+      <div class="stat"><b id="stat-aiocqhttp">–</b><span>napcat 已放行</span></div>
+      <div class="stat"><b id="stat-qq">–</b><span>官方已放行</span></div>
+    </section>
+
+    <div class="workspace">
+      <aside>
+        <div class="hint">选择平台，勾选后插件在该平台放行；未勾选则默认拦截（除非默认策略为全部放行）。</div>
+        <div class="platforms">
+          <button class="platform active" data-platform="aiocqhttp">
+            <b>🐧 napcat / OneBot11</b>
+            <small>aiocqhttp · 高风险平台</small>
+          </button>
+          <button class="platform" data-platform="qq_official">
+            <b>🔵 QQ 官方机器人</b>
+            <small>qq_official</small>
+          </button>
+        </div>
+        <div class="tools">
+          <button id="btn-refresh" class="ghost">🔄 刷新注册表</button>
+        </div>
+      </aside>
+
+      <article>
+        <div id="plugin-list" class="plugin-list"></div>
+        <div id="empty" class="empty hidden">暂无插件。请确认插件已安装并激活。</div>
+      </article>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

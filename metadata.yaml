@@ -1,0 +1,18 @@
+name: astrbot_plugin_platformgate
+display_name: 平台能力门禁 (Platform Gate)
+short_desc: 按平台(napcat/onebot11 vs 官方)白名单控制哪些插件的指令和 LLM 工具可用，防止高危插件在易封号平台上运行。
+desc: |-
+  一个"插件 × 平台"白名单门禁插件。默认全部拦截：在 AstrBot 的 WebUI 里，
+  能看到当前加载的所有插件及其注册的指令和 LLM 工具；勾选后，才允许该插件
+  在对应平台(napcat/onebot11=aiocqhttp 或 QQ 官方=qq_official)上执行指令和调用工具。
+  被拦截时向用户发送一句"该功能在此平台不可用"的提示。
+
+  设计动机：某些插件(如群分析、QQ空间)在 OneBot11(napcat) 上容易导致账号封禁。
+  通过本插件把它们从易封号平台的白名单里排除，从源头阻断指令和 LLM 工具被触发。
+repo: "https://github.com/204343414/astrbot_plugin_platformgate"
+author: "204343414"
+version: "1.0.0"
+astrbot_version: ">=4.26.0"
+support_platforms:
+  - aiocqhttp
+  - qq_official
