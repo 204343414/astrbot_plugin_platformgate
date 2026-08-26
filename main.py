@@ -260,23 +260,17 @@ class PlatformGatePlugin(Star):
             return
         if event.is_admin():
             return
-        # 判断是否指令类消息
-        if not getattr(event, "is_at_or_wake_command", False):
-            # 仍尝试匹配，兼容无唤醒前缀情形
-            pass
         text = (event.get_message_str() or "").strip()
         if not text:
             return
         cmd = _normalize_cmd_name(text)
-        # 取第一个词作为指令候选，同时用完整文本匹配（支持参数）
+        first_token = cmd.split(" ", 1)[0]
         snap = self._refresh_snapshot()
         hit_plugin: str | None = None
-        first_token = cmd.split(" ", 1)[0]
         for ent in snap.plugins:
             if not ent.commands:
                 continue
             for c in ent.commands:
-                # 精确指令 / 指令+空格参数 均命中
                 if cmd == c or cmd.startswith(c + " ") or first_token == c:
                     if self._is_allowed(platform, ent.name):
                         continue
@@ -285,12 +279,15 @@ class PlatformGatePlugin(Star):
             if hit_plugin:
                 break
         if hit_plugin:
-            self.logger.info("[PlatformGate] 拦截指令 platform=%s plugin=%s cmd=%r", platform, hit_plugin, cmd[:60])
+            logger.info(
+                "[PlatformGate] 拦截指令 platform=%s plugin=%s cmd=%r",
+                platform, hit_plugin, cmd[:60],
+            )
             event.stop_event()
             if self.block_hint:
                 await self._send_hint(event, hit_plugin, cmd)
         elif self.debug:
-            self.logger.debug("[PlatformGate] 放行 platform=%s text=%r", platform, text[:60])
+            logger.info("[PlatformGate] 放行/未命中 platform=%s text=%r", platform, text[:60])
 
     async def _send_hint(self, event: AstrMessageEvent, plugin: str, command: str):
         text = self.block_hint_text.replace("{plugin}", plugin).replace("{command}", command)
@@ -411,6 +408,7 @@ class PlatformGatePlugin(Star):
                     "tools": p.tools,
                 }
                 for p in snap.plugins
+                if p.name != PLUGIN_NAME  # 不在列表里显示门禁插件自身
             ],
         }
         return json_response(payload)
