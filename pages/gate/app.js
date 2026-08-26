@@ -76,6 +76,18 @@ function renderList() {
 function refreshStats() {
   renderStats();
   renderList();
+  renderLlmNote();
+}
+
+function renderLlmNote() {
+  const note = $("llm-block-note");
+  if (!note) return;
+  const blocked = (state.llm_block_platforms || []).map((p) => {
+    return p === "qq_official" ? "官方" : p === "aiocqhttp" ? "napcat" : p;
+  }).join("、");
+  note.innerHTML = blocked
+    ? `<div class="llm-block-title">🚫 已拦截 LLM 说话平台</div><div class="llm-block-body">${esc(blocked)}</div><div class="llm-block-hint">在 AstrBot 插件配置里改 block_llm_speech_platforms（逗号分隔平台名）可调整。</div>`
+    : `<div class="llm-block-title">💬 LLM 说话：所有平台放行</div><div class="llm-block-hint">配置 block_llm_speech_platforms 可指定拦截平台（如 qq_official）。</div>`;
 }
 
 async function save(platform, plugin, allow) {

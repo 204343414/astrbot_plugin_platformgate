@@ -33,5 +33,11 @@
     "description": "开启后打印每条被拦截/放行指令与工具的决策日志，方便排查。",
     "type": "bool",
     "default": false
+  },
+  "block_llm_speech_platforms": {
+    "description": "按平台禁止 LLM 说话（逗号分隔平台名）。在这些平台 AstrBot 不调用 LLM 回复。典型：官方 QQ bot 不能 LLM 主动说话，napcat 可以，填 qq_official。留空=不拦截任何平台的 LLM。",
+    "hint": "例如：qq_official 表示官方 bot 平台禁止 LLM 回复；aiocqhttp 表示 napcat 平台禁止。多个用英文逗号分隔，如 qq_official,aiocqhttp。",
+    "type": "string",
+    "default": "qq_official"
   }
 }

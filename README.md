@@ -30,6 +30,12 @@
 | `block_hint_text` | "" | 提示文案，`{plugin}`/`{command}` 占位 |
 | `protect_own_plugin` | true | 始终放行本插件自身 |
 | `debug_log` | false | 打印每条约拦截/放行日志 |
+| `block_llm_speech_platforms` | qq_official | 按平台禁止 LLM 说话（逗号分隔）。典型：官方 QQ bot 不能 LLM 主动说话，napcat 可以，填 qq_official。留空=不拦截任何平台的 LLM。 |
+
+## 额外能力
+
+- **按平台拦截 LLM 说话**：`block_llm_speech_platforms` 指定的平台不调用 LLM 回复（经 `on_llm_request` 钩子 `stop_event` 实现，官方机制）。典型场景：全局开启 LLM，但官方 QQ bot 平台仍禁止 LLM 说话，napcat 正常。
+- **跨平台静默让位**：同一群挂两个 bot（官方 + napcat）时，若某插件在本平台被拦截、但在另一目标平台放行，本平台**完全静默让位**（不发"不可用"提示），让另一个 bot 响应。配合"官方放行 / napcat 不放行"的差异配置，即可实现**优先官方说话**、避免两个 bot 各自提示/触发造成刷屏。
 
 ## 安装
 

@@ -104,6 +104,12 @@ class PlatformGatePlugin(Star):
         self.protect_own = bool(config.get("protect_own_plugin", True))
         self.debug = bool(config.get("debug_log", False))
 
+        # 按平台拦截 LLM 说话：在这些平台(逗号分隔)上禁止 AstrBot 调 LLM 回复。
+        # 典型场景：官方 QQ bot 不能 LLM 主动说话(受平台限制/易触发风控)，而 napcat 可以。
+        self.llm_block_platforms = {
+            s.strip() for s in str(config.get("block_llm_speech_platforms", "qq_official")).split(",") if s.strip()
+        }
+
         self.data_file = self._resolve_data_file()
         # rules[platform][plugin_name] = True/False （None 表示未配置 -> 用默认策略）
         self.rules: dict[str, dict[str, bool]] = {"aiocqhttp": {}, "qq_official": {}}
@@ -279,12 +285,23 @@ class PlatformGatePlugin(Star):
             if hit_plugin:
                 break
         if hit_plugin:
+            # 跨平台静默让位：若该插件在"另一个目标平台"放行，则本平台静默拦截
+            # (不发"不可用"提示)，让那个平台的 bot 去响应，避免两个 bot 各自
+            # 提示/触发造成刷屏。前提是用户在门禁里把插件配成"官方放行/napcat不放行"
+            # 之类的差异配置，即可实现"优先官方说话"。
+            other_ok = any(
+                other != platform
+                and other in PLATFORM_KEYS
+                and self._is_allowed(other, hit_plugin)
+                for other in PLATFORM_KEYS
+            )
             logger.info(
-                "[PlatformGate] 拦截指令 platform=%s plugin=%s cmd=%r",
-                platform, hit_plugin, cmd[:60],
+                "[PlatformGate] 拦截指令 platform=%s plugin=%s cmd=%r other_ok=%s",
+                platform, hit_plugin, cmd[:60], other_ok,
             )
             event.stop_event()
-            if self.block_hint:
+            # 另一平台会响应 -> 完全静默让位；否则按配置决定是否提示。
+            if self.block_hint and not other_ok:
                 await self._send_hint(event, hit_plugin, cmd)
         elif self.debug:
             logger.info("[PlatformGate] 放行/未命中 platform=%s text=%r", platform, text[:60])
@@ -377,6 +394,31 @@ class PlatformGatePlugin(Star):
         except Exception as exc:
             self.logger.warning("[PlatformGate] 包装工具失败 %s: %s", getattr(tool, "name", "?"), exc)
 
+    # ---------------- 按平台拦截 LLM 说话 ----------------
+    @filter.on_llm_request()
+    async def gate_llm_speech(self, event: AstrMessageEvent, req):
+        """按平台禁止 LLM 说话。
+
+        AstrBot 在每次 LLM 请求前触发 on_llm_request 钩子；若此处
+        event.stop_event()，则整个 LLM 请求被跳过（agent_request 里
+        call_event_hook 返回 True 即 return）。
+        """
+        if not self.enabled:
+            return
+        platform = event.get_platform_name()
+        if platform not in PLATFORM_KEYS:
+            return
+        if platform not in self.llm_block_platforms:
+            return
+        # 管理员放行（可选）：管理员在拦截平台也能用 LLM
+        if event.is_admin():
+            return
+        logger.info(
+            "[PlatformGate] 拦截 LLM 说话 platform=%s (block_llm_speech_platforms=%s)",
+            platform, sorted(self.llm_block_platforms),
+        )
+        event.stop_event()
+
     # ---------------- WebUI API ----------------
     def register_web_routes(self) -> None:
         from astrbot.api.web import request, json_response, error_response
@@ -393,6 +435,7 @@ class PlatformGatePlugin(Star):
             "default_allow_all": self.default_allow_all,
             "block_hint": self.block_hint,
             "block_hint_text": self.block_hint_text,
+            "llm_block_platforms": sorted(self.llm_block_platforms),
             "rules": self.rules,
             "platforms": list(PLATFORM_KEYS),
             "plugins": [
