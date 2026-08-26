@@ -274,6 +274,10 @@ class PlatformGatePlugin(Star):
         snap = self._refresh_snapshot()
         hit_plugin: str | None = None
         for ent in snap.plugins:
+            # 跳过内置(reserved)插件：AstrBot 系统命令(/reset /help /sid 等)
+            # 不属于任何第三方插件，不应被门禁拦截，永远放行。
+            if ent.reserved:
+                continue
             if not ent.commands:
                 continue
             for c in ent.commands:
@@ -451,7 +455,7 @@ class PlatformGatePlugin(Star):
                     "tools": p.tools,
                 }
                 for p in snap.plugins
-                if p.name != PLUGIN_NAME  # 不在列表里显示门禁插件自身
+                if p.name != PLUGIN_NAME and not p.reserved  # 不显示门禁自身与内置插件
             ],
         }
         return json_response(payload)

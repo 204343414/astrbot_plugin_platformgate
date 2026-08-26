@@ -32,6 +32,10 @@
 | `debug_log` | false | 打印每条约拦截/放行日志 |
 | `block_llm_speech_platforms` | qq_official | 按平台禁止 LLM 说话（逗号分隔）。典型：官方 QQ bot 不能 LLM 主动说话，napcat 可以，填 qq_official。留空=不拦截任何平台的 LLM。 |
 
+## 内置命令不拦截
+
+AstrBot 的**内置系统命令**（`/reset` `/help` `/sid` `/name` 等，`builtin_commands`）**永远不会被门禁拦截**——它们不是第三方插件，属于 AstrBot 核心功能，始终放行。门禁只管理第三方插件。
+
 ## 额外能力
 
 - **按平台拦截 LLM 说话**：`block_llm_speech_platforms` 指定的平台不调用 LLM 回复（经 `on_llm_request` 钩子 `stop_event` 实现，官方机制）。典型场景：全局开启 LLM，但官方 QQ bot 平台仍禁止 LLM 说话，napcat 正常。
