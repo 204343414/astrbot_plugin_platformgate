@@ -437,6 +437,21 @@ class PlatformGatePlugin(Star):
 
     async def initialize(self) -> None:
         self.register_web_routes()
+        # 启动诊断：确认门禁插件已被 AstrBot 加载，并枚举到多少插件/指令
+        try:
+            snap = self._refresh_snapshot(force=True)
+            logger.info(
+                "[PlatformGate] 已加载并枚举到 %d 个插件。rules.aiocqhttp=%d rules.qq_official=%d",
+                len(snap.plugins), len(self.rules.get("aiocqhttp", {})), len(self.rules.get("qq_official", {})),
+            )
+            if self.debug:
+                for p in snap.plugins:
+                    logger.info(
+                        "[PlatformGate]   插件 %s | 指令=%s | 工具=%s",
+                        p.name, p.commands, p.tools,
+                    )
+        except Exception as exc:
+            logger.warning("[PlatformGate] initialize 枚举诊断失败: %s", exc)
 
     async def terminate(self) -> None:
         self._save_rules()
