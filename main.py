@@ -499,6 +499,14 @@ class PlatformGatePlugin(Star):
                     )
         except Exception as exc:
             logger.warning("[PlatformGate] initialize 枚举诊断失败: %s", exc)
+        # 把"哪些平台 LLM 被门禁拦截"写入全局 SharedPreferences，
+        # 供 qqhub 等其它插件读取，让它们知道该平台的 LLM 实际不可用。
+        try:
+            from astrbot.core import sp
+            await sp.global_put("platformgate_llm_blocked_platforms", sorted(self.llm_block_platforms))
+            logger.info("[PlatformGate] 已发布 LLM 拦截平台到全局标记: %s", sorted(self.llm_block_platforms))
+        except Exception as exc:
+            logger.warning("[PlatformGate] 写入全局 LLM 拦截标记失败: %s", exc)
 
     async def terminate(self) -> None:
         self._save_rules()
