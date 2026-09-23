@@ -532,6 +532,7 @@ class PlatformGatePlugin(Star):
         try:
             from astrbot.core import sp
             await sp.global_put("platformgate_llm_blocked_platforms", sorted(self.llm_block_platforms))
+            await sp.global_put("platformgate_llm_allowed_groups", self.speech_groups)
             logger.info("[PlatformGate] 已发布 LLM 拦截平台到全局标记: %s", sorted(self.llm_block_platforms))
         except Exception as exc:
             logger.warning("[PlatformGate] 写入全局 LLM 拦截标记失败: %s", exc)
