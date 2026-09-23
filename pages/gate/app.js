@@ -77,6 +77,12 @@ function refreshStats() {
   renderStats();
   renderList();
   renderLlmNote();
+  renderGroupIds();
+}
+
+function renderGroupIds() {
+  const groups = state.speech_groups?.[currentPlatform] || [];
+  $("group-ids").value = groups.join("\n");
 }
 
 function renderLlmNote() {
@@ -127,6 +133,15 @@ function bindEvents() {
       const allow = e.target.checked;
       save(currentPlatform, plugin, allow);
     }
+  });
+
+  $("btn-save-groups").addEventListener("click", async () => {
+    try {
+      const groups = $("group-ids").value.split(/\\s+/).map(s => s.trim()).filter(Boolean);
+      const res = await bridge.apiPost("speech-groups", { platform: currentPlatform, groups });
+      state.speech_groups[currentPlatform] = res.groups;
+      setNotice(`已保存：${currentPlatform} 的群发言白名单`, false);
+    } catch (e) { setNotice("保存群白名单失败：" + (e.message || e), true); }
   });
 
   $("btn-refresh").addEventListener("click", async () => {

@@ -113,6 +113,8 @@ class PlatformGatePlugin(Star):
         self.data_file = self._resolve_data_file()
         # rules[platform][plugin_name] = True/False （None 表示未配置 -> 用默认策略）
         self.rules: dict[str, dict[str, bool]] = {"aiocqhttp": {}, "qq_official": {}}
+        # 允许 LLM 在指定群聊发言；空列表表示不额外限制（兼容原有行为）。
+        self.speech_groups: dict[str, list[str]] = {"aiocqhttp": [], "qq_official": []}
         self._load_rules()
 
         self._snapshot: Snapshot | None = None
@@ -141,13 +143,16 @@ class PlatformGatePlugin(Star):
                 for plat in PLATFORM_KEYS:
                     if isinstance(raw.get(plat), dict):
                         self.rules[plat] = {str(k): bool(v) for k, v in raw[plat].items()}
+                    groups = raw.get("speech_groups", {}).get(plat, [])
+                    if isinstance(groups, list):
+                        self.speech_groups[plat] = [str(x).strip() for x in groups if str(x).strip()]
         except Exception as exc:
             self.logger.error("[PlatformGate] 规则读取失败: %s", exc)
 
     def _save_rules(self) -> None:
         tmp = self.data_file.with_suffix(".json.tmp")
         with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(self.rules, f, ensure_ascii=False, indent=2)
+            json.dump({**self.rules, "speech_groups": self.speech_groups}, f, ensure_ascii=False, indent=2)
             f.flush()
             import os
             os.fsync(f.fileno())
@@ -412,6 +417,14 @@ class PlatformGatePlugin(Star):
         platform = event.get_platform_name()
         if platform not in PLATFORM_KEYS:
             return
+        # 填写群白名单后，无论平台是否在全局拦截列表，都只允许这些群触发 LLM。
+        groups = self.speech_groups.get(platform, [])
+        if groups:
+            group_id = str(event.get_group_id() or "").strip()
+            if group_id not in groups:
+                logger.info("[PlatformGate] 拦截非白名单群的 LLM 说话 platform=%s group=%s", platform, group_id or "private")
+                event.stop_event()
+            return
         if platform not in self.llm_block_platforms:
             return
         # 管理员放行（可选）：管理员在拦截平台也能用 LLM
@@ -430,6 +443,7 @@ class PlatformGatePlugin(Star):
         self.ctx.register_web_api(f"/{PLUGIN_NAME}/bootstrap", self._web_bootstrap, ["GET"], "PlatformGate 配置数据")
         self.ctx.register_web_api(f"/{PLUGIN_NAME}/set", self._web_set, ["POST"], "PlatformGate 保存规则")
         self.ctx.register_web_api(f"/{PLUGIN_NAME}/refresh", self._web_refresh, ["POST"], "PlatformGate 强制刷新注册表")
+        self.ctx.register_web_api(f"/{PLUGIN_NAME}/speech-groups", self._web_speech_groups, ["POST"], "保存允许 LLM 发言的群")
 
     async def _web_bootstrap(self):
         from astrbot.api.web import json_response
@@ -440,6 +454,7 @@ class PlatformGatePlugin(Star):
             "block_hint": self.block_hint,
             "block_hint_text": self.block_hint_text,
             "llm_block_platforms": sorted(self.llm_block_platforms),
+            "speech_groups": self.speech_groups,
             "rules": self.rules,
             "platforms": list(PLATFORM_KEYS),
             "plugins": [
@@ -476,6 +491,19 @@ class PlatformGatePlugin(Star):
             self.rules[platform][plugin] = bool(allow)
         self._save_rules()
         return json_response({"platform": platform, "plugin": plugin, "allow": allow, "effective": self._is_allowed(platform, plugin)})
+
+    async def _web_speech_groups(self):
+        from astrbot.api.web import request, json_response, error_response
+        body = await request.json(default={})
+        platform = str(body.get("platform", "") or "")
+        if platform not in PLATFORM_KEYS:
+            return error_response("未知平台", status_code=400)
+        groups = body.get("groups", [])
+        if not isinstance(groups, list):
+            return error_response("groups 必须是数组", status_code=400)
+        self.speech_groups[platform] = list(dict.fromkeys(str(x).strip() for x in groups if str(x).strip()))
+        self._save_rules()
+        return json_response({"platform": platform, "groups": self.speech_groups[platform]})
 
     async def _web_refresh(self):
         from astrbot.api.web import json_response

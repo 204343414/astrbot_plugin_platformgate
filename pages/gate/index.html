@@ -38,6 +38,12 @@
           <button id="btn-refresh" class="ghost">🔄 刷新注册表</button>
         </div>
         <div class="llm-block-note" id="llm-block-note"></div>
+        <div class="group-allow">
+          <label for="group-ids"><b>允许 LLM 发言的群</b></label>
+          <p>每行一个群号。留空表示不按群限制；填写后仅这些群允许说话。</p>
+          <textarea id="group-ids" rows="6" placeholder="例如：\n123456789\n987654321"></textarea>
+          <button id="btn-save-groups" class="ghost">💾 保存群白名单</button>
+        </div>
       </aside>
 
       <article>
