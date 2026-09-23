@@ -421,6 +421,9 @@ class PlatformGatePlugin(Star):
         groups = self.speech_groups.get(platform, [])
         if groups:
             group_id = str(event.get_group_id() or "").strip()
+            if not group_id:
+                origin = str(getattr(event, "unified_msg_origin", "") or "")
+                group_id = origin.split(":", 2)[-1].strip() if "GroupMessage" in origin else ""
             if group_id not in groups:
                 logger.info("[PlatformGate] 拦截非白名单群的 LLM 说话 platform=%s group=%s", platform, group_id or "private")
                 event.stop_event()
